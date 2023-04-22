@@ -1,12 +1,18 @@
-import json
 from fastapi import FastAPI
 import snscrape.modules.twitter as sntwitter
 import re    # RegEx for removing non-letter characters
 import pickle
 from keras.utils import pad_sequences
 from keras.models import load_model
+import os
+from dotenv import load_dotenv
+from googleapiclient.discovery import build
 
 app = FastAPI()
+
+load_dotenv()
+API_KEY=os.getenv('youtube_api_key_cred')
+youtube = build("youtube","v3",developerKey=API_KEY)
 
 tokenizer=None
 with open('./models/tokenizer.pickle', 'rb') as handle:
@@ -63,4 +69,32 @@ def get_text_sentiments(data):
     print(data)
     result = tweet_to_words(text)
     # print(tweets[0])
+    return {'result':result}
+
+
+@app.post("/api/get_youtube_sentiments/")
+def get_youtube_sentiments(req):
+    s=req
+    # print(s)
+    if s.find('watch') == -1:
+        s=s.split('/')[-1]
+    else:
+        s=re.sub(r'watch','',s)
+        s=re.sub(r'[^\w]v','=',s)
+        s=s.split('=')
+        s=s[2].split('&')[0]
+
+    # print(s)
+    request=youtube.commentThreads().list(
+        part='id,replies,snippet',
+        order='relevance',
+        videoId=s,
+        maxResults=100
+    )
+    response=request.execute()
+    com_list=[]
+    for i in response['items']:
+        com_list.append(i['snippet']['topLevelComment']['snippet']['textOriginal'])
+    
+    result = list(map(tweet_to_words,com_list))
     return {'result':result}
