@@ -56,3 +56,11 @@ def get_twitter_sentiments(data):
     # tweets = list(map(tweet_to_words,tweets))
     # print(tweets[0])
     return {'list':"hii"}
+
+@app.get("/api/get_text_sentiments/{data}")
+def get_text_sentiments(data):
+    text=data
+    print(data)
+    result = tweet_to_words(text)
+    # print(tweets[0])
+    return {'result':result}
