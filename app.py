@@ -99,7 +99,7 @@ def get_text_sentiments(data):
     text=data
     # print(data)
     result = tweet_to_words(text)
-    return {'result':result}
+    return {'result':result[0]}
 
 class YoutubeData(BaseModel):
     data: Any
@@ -137,4 +137,17 @@ def get_youtube_sentiments(data:dict):
     part_pos_count=(result.count('Patially Positive')*100)//n
     pos_count=100-neg_count-neu_count-part_pos_count
     result=[neg_count,neu_count,part_pos_count,pos_count]
-    return {'result':result,'values':vals}
+
+    request = youtube.videos().list(
+        part="snippet,statistics",
+        id=s
+    )
+    response=request.execute()
+    vDetails={
+        'title':response['items'][0]['snippet']['title'],
+        'thumbnail':response['items'][0]['snippet']['thumbnails']['medium']['url'],
+        'channel':response['items'][0]['snippet']['channelTitle'],
+        'commentcount':response['items'][0]['statistics']['commentCount']
+    }
+
+    return {'result':result,'values':vals,'vDetails':vDetails}
