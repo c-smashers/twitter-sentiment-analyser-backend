@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+from typing import Any,Annotated
+from fastapi import FastAPI,Body
+from fastapi.middleware.cors import CORSMiddleware  
 import snscrape.modules.twitter as sntwitter
 import re    # RegEx for removing non-letter characters
 import pickle
@@ -7,8 +9,18 @@ from keras.models import load_model
 import os
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
+from pydantic import BaseModel
+import math
 
 app = FastAPI()
+origins=["*"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 load_dotenv()
 API_KEY=os.getenv('youtube_api_key_cred')
@@ -36,8 +48,27 @@ def tweet_to_words(tweet):
     text=[text]
     text = tokenizer.texts_to_sequences(text)
     text = pad_sequences(text, padding='post', maxlen=max_len)
-    result=sentiment_model.predict(text).argmax(1)
-    result=sentiments[result[0]]
+    val=sentiment_model.predict(text)
+    senti_score=int(val[0][0]*-1000) + int(val[0][2]*1000)
+    if senti_score>100:
+        senti_score-=int(val[0][1]*1000)
+    elif senti_score > -100:
+        senti_score=0
+    else:
+        senti_score+=int(val[0][1]*1000)
+
+    if senti_score>400:
+        result="Positive"
+    elif senti_score==0:
+        result="Neutral"
+    elif senti_score > 0:
+        result="Patially Positive"
+    else:
+        result="Negative"
+    # result=val.argmax(1)
+    # print(val[0][result[0]])
+    senti_score=senti_score//100
+    result=[result,senti_score]
     return result
 
 
@@ -66,15 +97,16 @@ def get_twitter_sentiments(data):
 @app.get("/api/get_text_sentiments/{data}")
 def get_text_sentiments(data):
     text=data
-    print(data)
+    # print(data)
     result = tweet_to_words(text)
-    # print(tweets[0])
     return {'result':result}
 
+class YoutubeData(BaseModel):
+    data: Any
 
 @app.post("/api/get_youtube_sentiments/")
-def get_youtube_sentiments(req):
-    s=req
+def get_youtube_sentiments(data:dict):
+    s=data['value']
     # print(s)
     if s.find('watch') == -1:
         s=s.split('/')[-1]
@@ -97,4 +129,12 @@ def get_youtube_sentiments(req):
         com_list.append(i['snippet']['topLevelComment']['snippet']['textOriginal'])
     
     result = list(map(tweet_to_words,com_list))
-    return {'result':result}
+    n=len(result)
+    vals=[x[1] for x in result]
+    result=[x[0] for x in result]
+    neg_count=(result.count('Negative')*100)//n
+    neu_count=(result.count('Neutral')*100)//n
+    part_pos_count=(result.count('Patially Positive')*100)//n
+    pos_count=100-neg_count-neu_count-part_pos_count
+    result=[neg_count,neu_count,part_pos_count,pos_count]
+    return {'result':result,'values':vals}
