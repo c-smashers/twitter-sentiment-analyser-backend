@@ -18,6 +18,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
+
 load_dotenv()
 API_KEY=os.getenv('youtube_api_key_cred')
 youtube = build("youtube","v3",developerKey=API_KEY)
@@ -64,11 +68,6 @@ def tweet_to_words(tweet):
     senti_score=senti_score//100
     result=[result,senti_score]
     return result
-
-
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
 
 
 @app.get("/api/get_text_sentiments/{data}")
