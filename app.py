@@ -1,7 +1,5 @@
-from typing import Any,Annotated
-from fastapi import FastAPI,Body
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  
-import snscrape.modules.twitter as sntwitter
 import re    # RegEx for removing non-letter characters
 import pickle
 from keras.utils import pad_sequences
@@ -9,8 +7,6 @@ from keras.models import load_model
 import os
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
-from pydantic import BaseModel
-import math
 
 app = FastAPI()
 origins=["*"]
@@ -65,8 +61,6 @@ def tweet_to_words(tweet):
         result="Patially Positive"
     else:
         result="Negative"
-    # result=val.argmax(1)
-    # print(val[0][result[0]])
     senti_score=senti_score//100
     result=[result,senti_score]
     return result
@@ -76,23 +70,6 @@ def tweet_to_words(tweet):
 def read_root():
     return {"Hello": "World"}
 
-@app.get("/api/get_twitter_sentiments/{data}")
-def get_twitter_sentiments(data):
-    topic=data
-    hashtag=data
-    # query="pathaan (#pathaan) until:2023-01-14 since:2022-12-01"
-    # query = topic + " (#" + hashtag + ") " + "until:"+totimeyyyy+"-"+totimemm+"-"+totimeday+ " since:"+fromtimeyyyy+"-"+fromtimemm +"-"+fromtimeday +" lang:en"
-    query = topic +" lang:en"
-    tweets=[]
-    limits=100
-    for tweet in sntwitter.TwitterSearchScraper('(from:elonmusk) until:2022-01-01 since:2010-01-01').get_items():
-        if len(tweets)==limits:
-            break
-        else:
-            tweets.append(tweet.rawContent)
-    # tweets = list(map(tweet_to_words,tweets))
-    # print(tweets[0])
-    return {'list':"hii"}
 
 @app.get("/api/get_text_sentiments/{data}")
 def get_text_sentiments(data):
@@ -101,8 +78,6 @@ def get_text_sentiments(data):
     result = tweet_to_words(text)
     return {'result':result[0]}
 
-class YoutubeData(BaseModel):
-    data: Any
 
 @app.post("/api/get_youtube_sentiments/")
 def get_youtube_sentiments(data:dict):
