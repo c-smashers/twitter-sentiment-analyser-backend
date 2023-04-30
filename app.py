@@ -1,3 +1,4 @@
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  
 import re    # RegEx for removing non-letter characters
@@ -125,3 +126,7 @@ def get_youtube_sentiments(data:dict):
     }
 
     return {'result':result,'values':vals,'vDetails':vDetails}
+
+
+if __name__=="__main__":
+    uvicorn.run("app:app",host="localhost",port="8000")
