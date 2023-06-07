@@ -24,8 +24,8 @@ def read_root():
     return {"Hello": "World"}
 
 load_dotenv()
-API_KEY=os.getenv('youtube_api_key_cred')
-youtube = build("youtube","v3",developerKey=API_KEY)
+# API_KEY=os.getenv('youtube_api_key_cred')
+# youtube = build("youtube","v3",developerKey=API_KEY)
 
 tokenizer=None
 with open('./models/tokenizer.pickle', 'rb') as handle:
@@ -79,53 +79,53 @@ def get_text_sentiments(data):
     return {'result':result[0]}
 
 
-@app.post("/api/get_youtube_sentiments/")
-def get_youtube_sentiments(data:dict):
-    s=data['value']
-    # print(s)
-    if s.find('watch') == -1:
-        s=s.split('/')[-1]
-    else:
-        s=re.sub(r'watch','',s)
-        s=re.sub(r'[^\w]v','=',s)
-        s=s.split('=')
-        s=s[2].split('&')[0]
+# @app.post("/api/get_youtube_sentiments/")
+# def get_youtube_sentiments(data:dict):
+#     s=data['value']
+#     # print(s)
+#     if s.find('watch') == -1:
+#         s=s.split('/')[-1]
+#     else:
+#         s=re.sub(r'watch','',s)
+#         s=re.sub(r'[^\w]v','=',s)
+#         s=s.split('=')
+#         s=s[2].split('&')[0]
 
-    # print(s)
-    request=youtube.commentThreads().list(
-        part='id,replies,snippet',
-        order='relevance',
-        videoId=s,
-        maxResults=100
-    )
-    response=request.execute()
-    com_list=[]
-    for i in response['items']:
-        com_list.append(i['snippet']['topLevelComment']['snippet']['textOriginal'])
+#     # print(s)
+#     request=youtube.commentThreads().list(
+#         part='id,replies,snippet',
+#         order='relevance',
+#         videoId=s,
+#         maxResults=100
+#     )
+#     response=request.execute()
+#     com_list=[]
+#     for i in response['items']:
+#         com_list.append(i['snippet']['topLevelComment']['snippet']['textOriginal'])
     
-    result = list(map(tweet_to_words,com_list))
-    n=len(result)
-    vals=[x[1] for x in result]
-    result=[x[0] for x in result]
-    neg_count=(result.count('Negative')*100)//n
-    neu_count=(result.count('Neutral')*100)//n
-    part_pos_count=(result.count('Patially Positive')*100)//n
-    pos_count=100-neg_count-neu_count-part_pos_count
-    result=[neg_count,neu_count,part_pos_count,pos_count]
+#     result = list(map(tweet_to_words,com_list))
+#     n=len(result)
+#     vals=[x[1] for x in result]
+#     result=[x[0] for x in result]
+#     neg_count=(result.count('Negative')*100)//n
+#     neu_count=(result.count('Neutral')*100)//n
+#     part_pos_count=(result.count('Patially Positive')*100)//n
+#     pos_count=100-neg_count-neu_count-part_pos_count
+#     result=[neg_count,neu_count,part_pos_count,pos_count]
 
-    request = youtube.videos().list(
-        part="snippet,statistics",
-        id=s
-    )
-    response=request.execute()
-    vDetails={
-        'title':response['items'][0]['snippet']['title'],
-        'thumbnail':response['items'][0]['snippet']['thumbnails']['medium']['url'],
-        'channel':response['items'][0]['snippet']['channelTitle'],
-        'commentcount':response['items'][0]['statistics']['commentCount']
-    }
+#     request = youtube.videos().list(
+#         part="snippet,statistics",
+#         id=s
+#     )
+#     response=request.execute()
+#     vDetails={
+#         'title':response['items'][0]['snippet']['title'],
+#         'thumbnail':response['items'][0]['snippet']['thumbnails']['medium']['url'],
+#         'channel':response['items'][0]['snippet']['channelTitle'],
+#         'commentcount':response['items'][0]['statistics']['commentCount']
+#     }
 
-    return {'result':result,'values':vals,'vDetails':vDetails}
+#     return {'result':result,'values':vals,'vDetails':vDetails}
 
 
 if __name__=="__main__":
